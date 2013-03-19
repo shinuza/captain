@@ -12,6 +12,7 @@ var program = require('commander'),
 var PKG = require('../package.json');
 var VERSION = PKG.version;
 var PROJECT_NAME = PKG.name;
+var cwd = process.cwd();
 
 const PROJECT_ROOT = path.resolve(__dirname, '..');
 
@@ -22,6 +23,7 @@ program
   .option('loaddata [filename]', 'Loads data')
   .option('themes', 'Display available themes')
   .option('theme [theme]', 'Install theme')
+  .option('run', 'Run captain project')
   .option('init [projectname]', 'Creates a new project')
   .option('-f, --force', 'Force operation')
   .parse(process.argv);
@@ -90,7 +92,7 @@ function dirs(base, subs) {
 }
 
 /**
- * Install `theme` in `process.cwd()/root`
+ * Install `theme` in `cwd/root`
  *
  * @param root
  * @param theme
@@ -101,7 +103,7 @@ function installTheme(root, theme, fn) {
 
   //TODO: Replace ncp with own copy function
   if(fs.existsSync(theme)) {
-    ncp(theme, path.join(process.cwd(), root, 'themes'), fn);
+    ncp(theme, path.join(cwd, root, 'themes'), fn);
   } else {
     util.abort('Theme not found');
   }
@@ -120,7 +122,7 @@ function copyAssets(root, assets) {
   assets.forEach(function(asset) {
     _file = path.join('assets', asset);
     _in = path.join(PROJECT_ROOT, _file);
-    _out = path.join(process.cwd(), root, _file);
+    _out = path.join(cwd, root, _file);
     copy(_in, _out);
     console.log(util.cyan(pad('create : ')) + path.join(root, _file));
   });
@@ -159,6 +161,27 @@ function isEmptyDirectory(path) {
     }
   }
   return true;
+}
+
+/**
+ * Checks if cwd is a captain project
+ *
+ * @returns Boolean
+ */
+
+function isCaptainProject() {
+  try {
+    var pkg = require(path.join(cwd, '/package.json'));
+    return pkg.dependencies &&
+      Object.keys(pkg.dependencies)
+            .indexOf(PROJECT_NAME) !== -1;
+  } catch(e) {
+    if(e.code && e.code === 'MODULE_NOT_FOUND') {
+      return false;
+    } else {
+      throw e;
+    }
+  }
 }
 
 // Templates
@@ -341,19 +364,19 @@ var handlers = {
       program.help();
     }
 
-    try {
-      var pkg = require(path.join(process.cwd(), '/package.json'));
-
-      if(Object.keys(pkg.dependencies).indexOf(PROJECT_NAME) !== -1) {
+    if(isCaptainProject()) {
         installTheme(target);
-      } else {
-        util.abort('Not a Captain project, aborting');
-      }
-    } catch(e) {
-      console.log(e);
-      if(e.code === 'MODULE_NOT_FOUND') {
-        util.abort('Captain project not found');
-      }
+    } else {
+      util.abort('Not a Captain project, aborting');
+    }
+  },
+
+  run: function run() {
+    if(isCaptainProject()) {
+      var captain = require('../');
+      captain.listen(3000);
+    } else {
+      util.abort('Not a Captain project, aborting');
     }
   }
 
