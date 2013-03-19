@@ -99,11 +99,12 @@ function dirs(base, subs) {
  */
 
 function installTheme(root, theme, fn) {
-  theme = path.join(PROJECT_ROOT, 'themes', theme);
+  var _in = path.join(PROJECT_ROOT, 'themes', theme);
+  var _out = path.join(cwd, root, 'themes', theme);
 
   //TODO: Replace ncp with own copy function
-  if(fs.existsSync(theme)) {
-    ncp(theme, path.join(cwd, root, 'themes'), fn);
+  if(fs.existsSync(_in)) {
+    ncp(_in, _out, fn);
   } else {
     util.abort('Theme not found');
   }
@@ -304,7 +305,7 @@ var handlers = {
       console.log();
 
       // Creating dirs
-      dirs(name, ['assets', 'cache', 'media', 'logs']);
+      dirs(name, ['assets', 'cache', 'media', 'logs', 'themes']);
 
       // Creating files
       var templates = files(name);
