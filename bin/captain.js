@@ -90,16 +90,18 @@ function dirs(base, subs) {
 }
 
 /**
- * Install `theme` in `process.cwd()`
+ * Install `theme` in `process.cwd()/root`
  *
+ * @param root
  * @param theme
  */
 
-function installTheme(theme, fn) {
+function installTheme(root, theme, fn) {
   theme = path.join(PROJECT_ROOT, 'themes', theme);
 
+  //TODO: Replace ncp with own copy function
   if(fs.existsSync(theme)) {
-    ncp(theme, path.join(process.cwd(), 'themes'), fn);
+    ncp(theme, path.join(process.cwd(), root, 'themes'), fn);
   } else {
     util.abort('Theme not found');
   }
@@ -165,7 +167,7 @@ function files(name) {
   var index = [
     , 'var captain = require(\'' + PROJECT_NAME + '\'),'
     , '    core = captain.core,'
-    , '    admin = captain.admin,'
+    , '    admin = captain.admin;'
     , ''
     , 'captain.use(\'/admin\', admin);'
     , 'captain.use(core);'
@@ -292,12 +294,12 @@ var handlers = {
       copyAssets(name, ['syndication.html']);
 
       // Installing theme
-      installTheme('default', function(err) {
+      installTheme(name, 'default', function(err) {
         if(err) {
           util.abort(err);
         } else {
           console.log();
-          console.log(util.cyan('Installed theme: '), 'default');
+          console.log(util.cyan('Installing theme: '), 'default');
         }
 
         // Instructions
