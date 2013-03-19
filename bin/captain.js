@@ -108,7 +108,18 @@ function copyAsset(root, asset) {
 }
 
 /**
- * Test if `path` is empty.
+ * Tests if `path` is a directory.
+ *
+ * @param path
+ */
+
+function isDirectory(path) {
+  var stat = fs.statSync(path);
+  return stat.isDirectory();
+}
+
+/**
+ * Tests if `path` is empty.
  *
  * @param {String} path
  * @returns {Boolean}
@@ -230,10 +241,9 @@ var handlers = {
       program.help();
     }
 
-    var files = [],
-      stats = fs.statSync(filename);
+    var files = [];
 
-    if(stats.isDirectory()) {
+    if(isDirectory(filename)) {
       fs.readdirSync(filename).forEach(function(file) {
         files.push(path.join(filename, file));
       });
