@@ -303,7 +303,7 @@ var handlers = {
         console.log();
         console.log(util.cyan('Now run: '));
         console.log(pad('cd ' + target));
-        console.log(pad('npm start'));
+        console.log(pad('captain run'));
       });
     }
 
