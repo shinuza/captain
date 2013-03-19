@@ -340,8 +340,9 @@ var option = program.options
     return !~option.long.indexOf('-');
   })
   .some(function(option) {
-    if(program[option.long] === true) {
-      handlers[option.long]();
+    var val = program[option.long];
+    if(val) {
+      handlers[option.long](val);
       return true;
     }
     return false;
