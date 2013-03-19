@@ -9,9 +9,10 @@ var program = require('commander'),
     db = require('captain-core/lib/db'),
     util = require('captain-core/lib/util');
 
-var VERSION = require('../package.json').version;
+var PKG = require('../package.json');
+var VERSION = PKG.version;
+var PROJECT_NAME = PKG.name;
 
-const PROJECT_NAME = 'captain-js';
 const PROJECT_ROOT = path.resolve(__dirname, '..');
 
 program
