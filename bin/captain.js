@@ -375,8 +375,8 @@ var handlers = {
     process.env['NODE_PATH'] = path.resolve(PROJECT_ROOT, '..');
 
     var logs = path.join(cwd, 'logs'),
-        out = path.join(logs, 'out.log'),
-        err = path.join(logs, 'err.log');
+        out = fs.openSync(path.join(logs, 'out.log'), 'a'),
+        err = fs.openSync(path.join(logs, 'err.log'), 'a');
 
     if(isCaptainProject()) {
       var bin = program.watch
@@ -384,8 +384,8 @@ var handlers = {
         : 'node';
 
       var options = program.fork
-        ? { stdio: 'inherit' }
-        : { stdio: [ 'ignore', out, err ],  detached: true};
+        ? { stdio: [ 'ignore', out, err ],  detached: true}
+        : { stdio: 'inherit' };
 
       var child = spawn(bin, [path.join(cwd, 'index.js')], options);
 
