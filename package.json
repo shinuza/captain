@@ -1,0 +1,36 @@
+{
+  "name": "captain-js",
+  "description": "Captain is a blog engine for node.js",
+  "keywords": [
+    "blog",
+    "cms",
+    "content",
+    "management",
+    "web"
+  ],
+  "version": "0.1.0",
+  "author": {
+    "name": "Samori Gorse",
+    "email": "samorigorse@gmail.com"
+  },
+  "preferGlobal": true,
+  "bugs": "https://github.com/shinuza/captain/issues",
+  "repository": {
+    "type": "git",
+    "url": "git://github.com/shinuza/captain"
+  },
+  "main": "index.js",
+  "dependencies": {
+    "captain-core": "~0.19",
+    "captain-admin": "~0.5",
+    "commander": "~1.1.1",
+    "async": "~0.2.6",
+    "ncp": "~0.4.2"
+  },
+  "bin": {
+    "captain": "./bin/captain.js"
+  },
+  "engines": {
+    "node": ">=0.6 <0.10"
+  }
+}
