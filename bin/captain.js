@@ -11,6 +11,7 @@ var program = require('commander'),
 
 var VERSION = require('../package.json').version;
 
+const PROJECT_NAME = 'captain-js';
 const PROJECT_ROOT = path.resolve(__dirname, '..');
 
 program
@@ -44,6 +45,17 @@ function pad(str) {
 function write(path, str) {
   fs.writeFileSync(path, str);
   console.log(util.cyan(pad('create : ')) + path);
+}
+
+/**
+ * Reads `_in` and outputs its content to `_out`
+ *
+ * @param {String} _in
+ * @param {String} _out
+ */
+
+function copy(_in, _out) {
+  fs.writeFileSync(_out, fs.readFileSync(_in));
 }
 
 /**
@@ -95,16 +107,20 @@ function installTheme(theme, fn) {
 /**
  * Copy `asset` to `./assets/asset`
  *
- * @param asset
+ * @param {String} root
+ * @param {Array} assets
  */
 
-function copyAsset(root, asset) {
-  var out = path.join('assets', asset),
-      target = path.join(PROJECT_ROOT, out),
-      p = path.join(process.cwd(), root, out);
+function copyAssets(root, assets) {
+  var _file, _in, _out;
 
-  fs.writeFileSync(p, fs.readFileSync(target));
-  console.log(util.cyan(pad('create : ')) + path.join(root, out));
+  assets.forEach(function(asset) {
+    _file = path.join('assets', asset);
+    _in = path.join(PROJECT_ROOT, _file);
+    _out = path.join(process.cwd(), root, _file);
+    copy(_in, _out);
+    console.log(util.cyan(pad('create : ')) + path.join(root, _file));
+  });
 }
 
 /**
@@ -145,17 +161,15 @@ function isEmptyDirectory(path) {
 // Templates
 
 function files(name) {
-  var index = [
-    , 'var captain = require(\'captain-js\'),'
+  var app = [
+    , 'var captain = require(\'' + PROJECT_NAME + '\'),'
     , '    core = captain.core,'
     , '    admin = captain.admin,'
-    , '    settings = core.modules.settings;'
     , ''
-    , 'app.use(\'/admin\', admin);'
-    , 'app.use(core);'
-    , 'app.listen(settings.get(\'PORT\'), settings.get(\'HOST\'));'
+    , 'captain.use(\'/admin\', admin);'
+    , 'captain.use(core);'
     , ''
-    , 'console.log(\'Listening at http://%s:%d\', settings.get(\'HOST\'), settings.get(\'PORT\'));'
+    , 'exports = captain;'
   ].join(os.EOL);
 
 
@@ -166,16 +180,13 @@ function files(name) {
     , '  "version": "0.0.1",'
     , '  "private": true,'
     , '  "dependencies": {'
-    , '    "captain-js": "' + VERSION + '"'
-    , '  },'
-    , '  "scripts": {'
-    , '    "start": "node index.js"'
-    , '   }'
+    , '    "' + PROJECT_NAME +'": "' + VERSION + '"'
+    , '  }'
     , '}'
   ].join(os.EOL);
 
   return {
-    'index.js': index,
+    '.app.js': app,
     'package.json': pkg,
     'README.md': '## ' + name
   };
@@ -277,7 +288,7 @@ var handlers = {
       });
 
       // Copying assets
-      copyAsset(name, 'syndication.html');
+      copyAssets(name, ['syndication.html']);
 
       // Installing theme
       installTheme('default', function(err) {
@@ -330,7 +341,7 @@ var handlers = {
     try {
       var pkg = require(path.join(process.cwd(), '/package.json'));
 
-      if(Object.keys(pkg.dependencies).indexOf('captain-core') !== -1) {
+      if(Object.keys(pkg.dependencies).indexOf(PROJECT_NAME) !== -1) {
         installTheme(target);
       } else {
         util.abort('Not a Captain project, aborting');
