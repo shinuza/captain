@@ -26,7 +26,8 @@ program
   .option('theme [theme]', 'Install theme')
   .option('run', 'Run captain project')
   .option('init [projectname]', 'Creates a new project')
-  .option('-f, --force', 'Force operation')
+  .option('-f, --force', 'Force operation (init, syncdb)')
+  .option('-W, --watch', 'Watch for file changes (run)')
   .parse(process.argv);
 
 /**
@@ -372,7 +373,9 @@ var handlers = {
   run: function run() {
     if(isCaptainProject()) {
       process.env['NODE_PATH'] = path.resolve(PROJECT_ROOT, '..');
-      spawn('node', [path.join(cwd, 'index.js')], { stdio: 'inherit' });
+      var bin = program.watch ? path.resolve(PROJECT_ROOT, 'node_modules', '.bin', 'node-dev') : 'node';
+
+      spawn(bin, [path.join(cwd, 'index.js')], { stdio: 'inherit' });
     } else {
       util.abort('Not a Captain project');
     }
