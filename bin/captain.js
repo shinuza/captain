@@ -162,7 +162,7 @@ function isEmptyDirectory(path) {
 // Templates
 
 function files(name) {
-  var app = [
+  var index = [
     , 'var captain = require(\'' + PROJECT_NAME + '\'),'
     , '    core = captain.core,'
     , '    admin = captain.admin,'
@@ -187,7 +187,7 @@ function files(name) {
   ].join(os.EOL);
 
   return {
-    '.app.js': app,
+    'index.js': index,
     'package.json': pkg,
     'README.md': '## ' + name
   };
