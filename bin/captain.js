@@ -226,6 +226,10 @@ var handlers = {
   },
 
   loaddata: function loaddata(filename) {
+    if(filename === true) {
+      program.help();
+    }
+
     var files = [],
       stats = fs.statSync(filename);
 
