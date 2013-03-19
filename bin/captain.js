@@ -131,30 +131,6 @@ function isEmptyDirectory(path) {
   return true;
 }
 
-/**
- * Synchronize database.
- *
- * @param {Boolean} forceDrop
- */
-
-function syncDB(forceDrop) {
-  db.syncDB({
-    oncomplete: function(err) {
-      if(err) {
-        util.abort('Failed syncing', err);
-      } else {
-        util.exit('\nAll done\n\n');
-      }
-    },
-
-    onprogress: function(script) {
-      console.log('Running: \n========\n%s\n', script);
-    },
-
-    forceDrop: forceDrop
-  });
-}
-
 // Templates
 
 function files(name) {
@@ -195,46 +171,63 @@ function files(name) {
 }
 
 // Handlers
-//TODO: Use IIFE
-if(program.createuser) {
-  program.prompt('username: ', function(username) {
-    program.password('password: ', '*', function(password) {
-      program.password('confirm password: ', '*', function(password2) {
-        if(password != password2) {
-          return util.abort('Password do not match, bailing out.');
-        }
-        program.prompt('email: ', function(email) {
-          var body = {username: username, password: password, isStaff: true, email: email};
+var handlers = {
 
-          db.users.create(body, function(err) {
-            if(err) {
-              util.abort('Failed to created user', err);
-            } else {
-              util.exit('\nUser created!\n\n');
-            }
+  createuser: function createuser() {
+    program.prompt('username: ', function(username) {
+      program.password('password: ', '*', function(password) {
+        program.password('confirm password: ', '*', function(password2) {
+          if(password != password2) {
+            util.abort('Password do not match, bailing out.');
+          }
+          program.prompt('email: ', function(email) {
+            var body = {username: username, password: password, isStaff: true, email: email};
+
+            db.users.create(body, function(err) {
+              if(err) {
+                util.abort('Failed to created user', err);
+              } else {
+                util.exit('\nUser created!\n\n');
+              }
+            });
           });
         });
       });
     });
-  });
-}
+  },
 
-else if(program.syncdb) {
-  if(program.force) {
-    syncDB(true);
-  } else {
-    program.prompt('Force drop? (y/n): ', function(answer) {
-      var forceDrop = !!answer.match(/y|yes|arrr/);
-      syncDB(forceDrop);
-    });
-  }
-}
+  syncdb: function syncdb() {
+    function fn(force) {
+      db.syncDB({
+        oncomplete: function(err) {
+          if(err) {
+            util.abort('Failed syncing', err);
+          } else {
+            util.exit('\nAll done\n\n');
+          }
+        },
 
-else if(program.loaddata) {
-  (function() {
-    var files = [];
-    var filename = program.loaddata;
-    var stats = fs.statSync(filename);
+        onprogress: function(script) {
+          console.log('Running: \n========\n%s\n', script);
+        },
+
+        forceDrop: force
+      });
+    }
+
+    if(program.force) {
+      fn(true);
+    } else {
+      program.prompt('Force drop? (y/n): ', function(answer) {
+        var force = !!answer.match(/y|yes|arrr/i);
+        fn(force);
+      });
+    }
+  },
+
+  loaddata: function loaddata(filename) {
+    var files = [],
+      stats = fs.statSync(filename);
 
     if(stats.isDirectory()) {
       fs.readdirSync(filename).forEach(function(file) {
@@ -255,75 +248,74 @@ else if(program.loaddata) {
         util.exit('\nAll done.\n\n');
       }
     });
-  }());
-}
+  },
 
-else if(program.init) {
-  var target = program.init;
-
-  function initProject(name) {
-    console.log();
-    console.log(util.cyan('Creating project: ') + name);
-    console.log();
-
-    // Creating dirs
-    dirs(name, ['assets', 'cache', 'media', 'logs']);
-
-    // Creating files
-    var templates = files(name);
-    Object.keys(templates).forEach(function(key) {
-      var p = path.join(name, key);
-      write(p, templates[key]);
-    });
-
-    copyAsset(name, 'syndication.html');
-    installTheme('default', function(err) {
-      if(err) {
-        util.abort(err);
-      } else {
-        console.log();
-        console.log(util.cyan('Installed theme: '), 'default');
-      }
-
-      // Instructions
+  init: function init(target) {
+    function fn(name) {
       console.log();
-      console.log(util.cyan('Now run: '));
-      console.log(pad('cd ' + target));
-      console.log(pad('npm start'));
-    });
-  }
+      console.log(util.cyan('Creating project: ') + name);
+      console.log();
 
-  if(target === true) {
-    program.help();
-  }
+      // Creating dirs
+      dirs(name, ['assets', 'cache', 'media', 'logs']);
 
-  if(fs.existsSync(target) && !isEmptyDirectory(target) && !program.force) {
-    program.prompt('Directory not empty, force create? (y/n): ', function(answer) {
-      var forceCreate = !!answer.match(/y|yes|arrr/);
+      // Creating files
+      var templates = files(name);
+      Object.keys(templates).forEach(function(key) {
+        var p = path.join(name, key);
+        write(p, templates[key]);
+      });
 
-      if(forceCreate) {
-        initProject(target);
-      } else {
-        util.abort('Cowardly refusing to init project in a non-empty directory');
-      }
-    });
-  } else {
-    initProject(target);
-  }
-}
+      // Copying assets
+      copyAsset(name, 'syndication.html');
 
-else if(program.themes) {
-  (function() {
-    var themes = fs.readdirSync(path.join(PROJECT_ROOT, 'assets', 'themes'));
+      // Installing theme
+      installTheme('default', function(err) {
+        if(err) {
+          util.abort(err);
+        } else {
+          console.log();
+          console.log(util.cyan('Installed theme: '), 'default');
+        }
+
+        // Instructions
+        console.log();
+        console.log(util.cyan('Now run: '));
+        console.log(pad('cd ' + target));
+        console.log(pad('npm start'));
+      });
+    }
+
+    if(target === true) {
+      program.help();
+    }
+
+    if(fs.existsSync(target) && !isEmptyDirectory(target) && !program.force) {
+      program.prompt('Directory not empty, force create? (y/n): ', function(answer) {
+        var forceCreate = !!answer.match(/y|yes|arrr/i);
+
+        if(forceCreate) {
+          fn(target);
+        } else {
+          util.abort('Cowardly refusing to init project in a non-empty directory');
+        }
+      });
+    } else {
+      fn(target);
+    }
+  },
+
+  themes: function themes() {
+    var themes = fs.readdirSync(path.join(PROJECT_ROOT, 'themes'));
 
     console.log(util.cyan('Available themes:'));
     console.log(themes.map(pad).join(os.EOL));
-  })();
-}
+  },
 
-else if(program.theme) {
-  (function(target) {
-    if(target === true) { program.help(); }
+  theme: function theme(target) {
+    if(target === true) {
+      program.help();
+    }
 
     try {
       var pkg = require(path.join(process.cwd(), '/package.json'));
@@ -339,9 +331,22 @@ else if(program.theme) {
         util.abort('Captain project not found');
       }
     }
-  })(program.theme);
-}
+  }
 
-else {
+};
+
+var option = program.options
+  .filter(function(option) {
+    return !~option.long.indexOf('-');
+  })
+  .some(function(option) {
+    if(program[option.long] === true) {
+      handlers[option.long]();
+      return true;
+    }
+    return false;
+  });
+
+if(!option) {
   program.help();
 }
