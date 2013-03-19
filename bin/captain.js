@@ -1,7 +1,8 @@
 #!/usr/bin/env node
 var fs = require('fs'),
     os = require('os'),
-    path = require('path');
+    path = require('path'),
+    spawn = require('child_process').spawn;
 
 var program = require('commander'),
     async = require('async'),
@@ -190,13 +191,9 @@ function isCaptainProject() {
 function files(name) {
   var index = [
     , 'var captain = require(\'' + PROJECT_NAME + '\'),'
-    , '    core = captain.core,'
-    , '    admin = captain.admin;'
+    , '    settings = captain.modules.settings;'
     , ''
-    , 'captain.use(\'/admin\', admin);'
-    , 'captain.use(core);'
-    , ''
-    , 'exports = captain;'
+    , 'captain.listen(settings.get(\'PORT\'));'
   ].join(os.EOL);
 
 
@@ -368,16 +365,16 @@ var handlers = {
     if(isCaptainProject()) {
         installTheme(target);
     } else {
-      util.abort('Not a Captain project, aborting');
+      util.abort('Not a Captain project');
     }
   },
 
   run: function run() {
     if(isCaptainProject()) {
-      var captain = require('../');
-      captain.listen(3000);
+      process.env['NODE_PATH'] = path.resolve(PROJECT_ROOT, '..');
+      spawn('node', [path.join(cwd, 'index.js')], { stdio: 'inherit' });
     } else {
-      util.abort('Not a Captain project, aborting');
+      util.abort('Not a Captain project');
     }
   }
 

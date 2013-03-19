@@ -1,7 +1,6 @@
-exports.core = require('captain-core');
+var core = require('captain-core');
+var admin = require('captain-admin');
 
-exports.admin = require('captain-admin');
+core.use('/admin', admin);
 
-exports.PROJECT_ROOT = __dirname;
-
-module.exports = exports.core;
+module.exports = core;
