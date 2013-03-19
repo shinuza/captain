@@ -1,0 +1,27 @@
+{% extends "layout.html" %}
+
+{% block content %}
+  {% for post in posts %}
+    {% include "includes/post.html" %}
+  {% else %}
+    <h2>Nothing to see here</h2>
+  {% endfor %}
+
+  {% if count > POSTS_BY_PAGE %}
+  <nav class="pagination">
+    {% if prev %}
+      <a href="/?page={{page - 1}}">« Previous</a>
+    {% else %}
+      <span>« Previous</span>
+    {% endif %}
+    —
+    <strong>{{page}}</strong>
+    —
+    {% if next %}
+    <a href="/?page={{page|add(1}}">Next »</a>
+    {% else %}
+    <span>Next »</span>
+    {% endif %}
+  </nav>
+  {% endif %}
+{% endblock %}

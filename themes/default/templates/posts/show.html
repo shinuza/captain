@@ -1,0 +1,29 @@
+{% extends "layout.html" %}
+
+{% block title %}{{post.title}} - {{SITE_TITLE}}{% endblock %}
+
+{% block header %}
+<time datetime="{{post.created_at|date('c')}}">{{post.created_at|date(DATE_FORMAT)}}</time>
+<h1 class="title">{{post.title}}</h1>
+{% endblock %}
+
+{% block content %}
+<div class="summary">
+    {% autoescape off %}
+    {{post.summary|markdown}}
+    {% endautoescape %}
+</div>
+<article>
+    {% autoescape off %}
+    {{post.body|markdown}}
+    {% endautoescape %}
+</article>
+
+{% if tags.length %}
+<h3>Tags</h3>
+{% include "includes/tags.html" %}
+{% endif %}
+
+<h3>Navigation</h3>
+{% include "includes/menu.html" %}
+{% endblock %}

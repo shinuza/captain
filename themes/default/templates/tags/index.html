@@ -1,0 +1,16 @@
+{% extends "layout.html" %}
+
+{% block title %}Tags - {{SITE_TITLE}}{% endblock %}
+
+{% block header %}
+<h1>Tags</h1>
+{% include "includes/menu.html" %}
+{% endblock %}
+
+{% block content %}
+    {% if tags.length %}
+    {% include "includes/tags.html" %}
+    {% else %}
+    <h2>Nothing to see here</h2>
+    {% endif %}
+{% endblock %}

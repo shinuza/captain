@@ -1,0 +1,22 @@
+{% extends "layout.html" %}
+
+{% block title %}Archive - {{SITE_TITLE}}{% endblock %}
+
+{% block header %}
+<h1>Archive</h1>
+{% include "includes/menu.html" %}
+{% endblock %}
+
+{% block content %}
+{% for year in years %}
+    <h3>{{loop.key}}</h3>
+    <ul>
+        {% for post in year %}
+            <li>
+                <time datetime="{{post.created_at|date('c')}}">{{post.created_at|date('d M')}}</time>
+                <a href="/posts/{{post.slug}}">{{post.title}}</a>
+            </li>
+        {% endfor %}
+    </ul>
+{% endfor %}
+{% endblock %}

@@ -1,0 +1,13 @@
+<article>
+    <div class="date">{{post.created_at|date('j M, Y')}}</div>
+    <div class="content">
+        <h2 class="title">
+            <a href="/posts/{{post.slug}}">{{post.title}}</a>
+        </h2>
+        <div class="summary">
+            {% autoescape off %}
+            {{post.summary|markdown}}
+            {% endautoescape %}
+        </div>
+    </div>
+</article>
