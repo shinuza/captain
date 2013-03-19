@@ -241,11 +241,7 @@ var handlers = {
       files.push(filename);
     }
 
-    files = files.map(function(file) {
-      return db.load(file);
-    });
-
-    async.series(files, function(err){
+    async.series(files.map(db.load), function(err){
       if(err) {
         util.abort('Failed loading data', err);
       } else {
