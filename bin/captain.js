@@ -1,7 +1,8 @@
 #!/usr/bin/env node
 var fs = require('fs'),
     os = require('os'),
-    path = require('path');
+    path = require('path'),
+    spawn = require('child_process').spawn;
 
 var program = require('commander'),
     async = require('async'),
@@ -9,7 +10,10 @@ var program = require('commander'),
     db = require('captain-core/lib/db'),
     util = require('captain-core/lib/util');
 
-var VERSION = require('../package.json').version;
+var PKG = require('../package.json');
+var VERSION = PKG.version;
+var PROJECT_NAME = PKG.name;
+var cwd = process.cwd();
 
 const PROJECT_ROOT = path.resolve(__dirname, '..');
 
@@ -20,6 +24,7 @@ program
   .option('loaddata [filename]', 'Loads data')
   .option('themes', 'Display available themes')
   .option('theme [theme]', 'Install theme')
+  .option('run', 'Run captain project')
   .option('init [projectname]', 'Creates a new project')
   .option('-f, --force', 'Force operation')
   .parse(process.argv);
@@ -44,6 +49,17 @@ function pad(str) {
 function write(path, str) {
   fs.writeFileSync(path, str);
   console.log(util.cyan(pad('create : ')) + path);
+}
+
+/**
+ * Reads `_in` and outputs its content to `_out`
+ *
+ * @param {String} _in
+ * @param {String} _out
+ */
+
+function copy(_in, _out) {
+  fs.writeFileSync(_out, fs.readFileSync(_in));
 }
 
 /**
@@ -77,16 +93,19 @@ function dirs(base, subs) {
 }
 
 /**
- * Install `theme` in `process.cwd()`
+ * Install `theme` in `cwd/root`
  *
+ * @param root
  * @param theme
  */
 
-function installTheme(theme, fn) {
-  theme = path.join(PROJECT_ROOT, 'themes', theme);
+function installTheme(root, theme, fn) {
+  var _in = path.join(PROJECT_ROOT, 'themes', theme);
+  var _out = path.join(cwd, root, 'themes', theme);
 
-  if(fs.existsSync(theme)) {
-    ncp(theme, path.join(process.cwd(), 'themes'), fn);
+  //TODO: Replace ncp with own copy function
+  if(fs.existsSync(_in)) {
+    ncp(_in, _out, fn);
   } else {
     util.abort('Theme not found');
   }
@@ -95,20 +114,35 @@ function installTheme(theme, fn) {
 /**
  * Copy `asset` to `./assets/asset`
  *
- * @param asset
+ * @param {String} root
+ * @param {Array} assets
  */
 
-function copyAsset(root, asset) {
-  var out = path.join('assets', asset),
-      target = path.join(PROJECT_ROOT, out),
-      p = path.join(process.cwd(), root, out);
+function copyAssets(root, assets) {
+  var _file, _in, _out;
 
-  fs.writeFileSync(p, fs.readFileSync(target));
-  console.log(util.cyan(pad('create : ')) + path.join(root, out));
+  assets.forEach(function(asset) {
+    _file = path.join('assets', asset);
+    _in = path.join(PROJECT_ROOT, _file);
+    _out = path.join(cwd, root, _file);
+    copy(_in, _out);
+    console.log(util.cyan(pad('create : ')) + path.join(root, _file));
+  });
 }
 
 /**
- * Test if `path` is empty.
+ * Tests if `path` is a directory.
+ *
+ * @param path
+ */
+
+function isDirectory(path) {
+  var stat = fs.statSync(path);
+  return stat.isDirectory();
+}
+
+/**
+ * Tests if `path` is empty.
  *
  * @param {String} path
  * @returns {Boolean}
@@ -132,43 +166,34 @@ function isEmptyDirectory(path) {
 }
 
 /**
- * Synchronize database.
+ * Checks if cwd is a captain project
  *
- * @param {Boolean} forceDrop
+ * @returns Boolean
  */
 
-function syncDB(forceDrop) {
-  db.syncDB({
-    oncomplete: function(err) {
-      if(err) {
-        util.abort('Failed syncing', err);
-      } else {
-        util.exit('\nAll done\n\n');
-      }
-    },
-
-    onprogress: function(script) {
-      console.log('Running: \n========\n%s\n', script);
-    },
-
-    forceDrop: forceDrop
-  });
+function isCaptainProject() {
+  try {
+    var pkg = require(path.join(cwd, '/package.json'));
+    return pkg.dependencies &&
+      Object.keys(pkg.dependencies)
+            .indexOf(PROJECT_NAME) !== -1;
+  } catch(e) {
+    if(e.code && e.code === 'MODULE_NOT_FOUND') {
+      return false;
+    } else {
+      throw e;
+    }
+  }
 }
 
 // Templates
 
 function files(name) {
   var index = [
-    , 'var captain = require(\'captain-js\'),'
-    , '    core = captain.core,'
-    , '    admin = captain.admin,'
-    , '    settings = core.modules.settings;'
+    , 'var captain = require(\'' + PROJECT_NAME + '\'),'
+    , '    settings = captain.modules.settings;'
     , ''
-    , 'app.use(\'/admin\', admin);'
-    , 'app.use(core);'
-    , 'app.listen(settings.get(\'PORT\'), settings.get(\'HOST\'));'
-    , ''
-    , 'console.log(\'Listening at http://%s:%d\', settings.get(\'HOST\'), settings.get(\'PORT\'));'
+    , 'captain.listen(settings.get(\'PORT\'));'
   ].join(os.EOL);
 
 
@@ -179,11 +204,8 @@ function files(name) {
     , '  "version": "0.0.1",'
     , '  "private": true,'
     , '  "dependencies": {'
-    , '    "captain-js": "' + VERSION + '"'
-    , '  },'
-    , '  "scripts": {'
-    , '    "start": "node index.js"'
-    , '   }'
+    , '    "' + PROJECT_NAME +'": "' + VERSION + '"'
+    , '  }'
     , '}'
   ].join(os.EOL);
 
@@ -195,48 +217,68 @@ function files(name) {
 }
 
 // Handlers
-//TODO: Use IIFE
-if(program.createuser) {
-  program.prompt('username: ', function(username) {
-    program.password('password: ', '*', function(password) {
-      program.password('confirm password: ', '*', function(password2) {
-        if(password != password2) {
-          return util.abort('Password do not match, bailing out.');
-        }
-        program.prompt('email: ', function(email) {
-          var body = {username: username, password: password, isStaff: true, email: email};
+var handlers = {
 
-          db.users.create(body, function(err) {
-            if(err) {
-              util.abort('Failed to created user', err);
-            } else {
-              util.exit('\nUser created!\n\n');
-            }
+  createuser: function createuser() {
+    program.prompt('username: ', function(username) {
+      program.password('password: ', '*', function(password) {
+        program.password('confirm password: ', '*', function(password2) {
+          if(password != password2) {
+            util.abort('Password do not match, bailing out.');
+          }
+          program.prompt('email: ', function(email) {
+            var body = {username: username, password: password, isStaff: true, email: email};
+
+            db.users.create(body, function(err) {
+              if(err) {
+                util.abort('Failed to created user', err);
+              } else {
+                util.exit('\nUser created!\n\n');
+              }
+            });
           });
         });
       });
     });
-  });
-}
+  },
 
-else if(program.syncdb) {
-  if(program.force) {
-    syncDB(true);
-  } else {
-    program.prompt('Force drop? (y/n): ', function(answer) {
-      var forceDrop = !!answer.match(/y|yes|arrr/);
-      syncDB(forceDrop);
-    });
-  }
-}
+  syncdb: function syncdb() {
+    function fn(force) {
+      db.syncDB({
+        oncomplete: function(err) {
+          if(err) {
+            util.abort('Failed syncing', err);
+          } else {
+            util.exit('\nAll done\n\n');
+          }
+        },
 
-else if(program.loaddata) {
-  (function() {
+        onprogress: function(script) {
+          console.log('Running: \n========\n%s\n', script);
+        },
+
+        forceDrop: force
+      });
+    }
+
+    if(program.force) {
+      fn(true);
+    } else {
+      program.prompt('Force drop? (y/n): ', function(answer) {
+        var force = !!answer.match(/y|yes|arrr/i);
+        fn(force);
+      });
+    }
+  },
+
+  loaddata: function loaddata(filename) {
+    if(filename === true) {
+      program.help();
+    }
+
     var files = [];
-    var filename = program.loaddata;
-    var stats = fs.statSync(filename);
 
-    if(stats.isDirectory()) {
+    if(isDirectory(filename)) {
       fs.readdirSync(filename).forEach(function(file) {
         files.push(path.join(filename, file));
       });
@@ -244,104 +286,113 @@ else if(program.loaddata) {
       files.push(filename);
     }
 
-    files = files.map(function(file) {
-      return db.load(file);
-    });
-
-    async.series(files, function(err){
+    async.series(files.map(db.load), function(err){
       if(err) {
         util.abort('Failed loading data', err);
       } else {
         util.exit('\nAll done.\n\n');
       }
     });
-  }());
-}
+  },
 
-else if(program.init) {
-  var target = program.init;
-
-  function initProject(name) {
-    console.log();
-    console.log(util.cyan('Creating project: ') + name);
-    console.log();
-
-    // Creating dirs
-    dirs(name, ['assets', 'cache', 'media', 'logs']);
-
-    // Creating files
-    var templates = files(name);
-    Object.keys(templates).forEach(function(key) {
-      var p = path.join(name, key);
-      write(p, templates[key]);
-    });
-
-    copyAsset(name, 'syndication.html');
-    installTheme('default', function(err) {
-      if(err) {
-        util.abort(err);
-      } else {
-        console.log();
-        console.log(util.cyan('Installed theme: '), 'default');
-      }
-
-      // Instructions
+  init: function init(target) {
+    function fn(name) {
       console.log();
-      console.log(util.cyan('Now run: '));
-      console.log(pad('cd ' + target));
-      console.log(pad('npm start'));
-    });
-  }
+      console.log(util.cyan('Creating project: ') + name);
+      console.log();
 
-  if(target === true) {
-    program.help();
-  }
+      // Creating dirs
+      dirs(name, ['assets', 'cache', 'media', 'logs', 'themes']);
 
-  if(fs.existsSync(target) && !isEmptyDirectory(target) && !program.force) {
-    program.prompt('Directory not empty, force create? (y/n): ', function(answer) {
-      var forceCreate = !!answer.match(/y|yes|arrr/);
+      // Creating files
+      var templates = files(name);
+      Object.keys(templates).forEach(function(key) {
+        var p = path.join(name, key);
+        write(p, templates[key]);
+      });
 
-      if(forceCreate) {
-        initProject(target);
-      } else {
-        util.abort('Cowardly refusing to init project in a non-empty directory');
-      }
-    });
-  } else {
-    initProject(target);
-  }
-}
+      // Copying assets
+      copyAssets(name, ['syndication.html']);
 
-else if(program.themes) {
-  (function() {
-    var themes = fs.readdirSync(path.join(PROJECT_ROOT, 'assets', 'themes'));
+      // Installing theme
+      installTheme(name, 'default', function(err) {
+        if(err) {
+          util.abort(err);
+        } else {
+          console.log();
+          console.log(util.cyan('Installing theme: '), 'default');
+        }
+
+        // Instructions
+        console.log();
+        console.log(util.cyan('Now run: '));
+        console.log(pad('cd ' + target));
+        console.log(pad('captain run'));
+      });
+    }
+
+    if(target === true) {
+      program.help();
+    }
+
+    if(fs.existsSync(target) && !isEmptyDirectory(target) && !program.force) {
+      program.prompt('Directory not empty, force create? (y/n): ', function(answer) {
+        var forceCreate = !!answer.match(/y|yes|arrr/i);
+
+        if(forceCreate) {
+          fn(target);
+        } else {
+          util.abort('Cowardly refusing to init project in a non-empty directory');
+        }
+      });
+    } else {
+      fn(target);
+    }
+  },
+
+  themes: function themes() {
+    var themes = fs.readdirSync(path.join(PROJECT_ROOT, 'themes'));
 
     console.log(util.cyan('Available themes:'));
     console.log(themes.map(pad).join(os.EOL));
-  })();
-}
+  },
 
-else if(program.theme) {
-  (function(target) {
-    if(target === true) { program.help(); }
-
-    try {
-      var pkg = require(path.join(process.cwd(), '/package.json'));
-
-      if(Object.keys(pkg.dependencies).indexOf('captain-core') !== -1) {
-        installTheme(target);
-      } else {
-        util.abort('Not a Captain project, aborting');
-      }
-    } catch(e) {
-      console.log(e);
-      if(e.code === 'MODULE_NOT_FOUND') {
-        util.abort('Captain project not found');
-      }
+  theme: function theme(target) {
+    if(target === true) {
+      program.help();
     }
-  })(program.theme);
-}
 
-else {
+    if(isCaptainProject()) {
+        installTheme(target);
+    } else {
+      util.abort('Not a Captain project');
+    }
+  },
+
+  run: function run() {
+    if(isCaptainProject()) {
+      process.env['NODE_PATH'] = path.resolve(PROJECT_ROOT, '..');
+      spawn('node', [path.join(cwd, 'index.js')], { stdio: 'inherit' });
+    } else {
+      util.abort('Not a Captain project');
+    }
+  }
+
+};
+
+var option = program.options
+  .filter(function(option) {
+    return !~option.long.indexOf('-');
+  })
+  .some(function(option) {
+    var val = program[option.long];
+    if(val) {
+      handlers[option.long](val);
+      return true;
+    }
+    return false;
+  });
+
+if(!option) {
   program.help();
 }
