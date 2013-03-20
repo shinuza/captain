@@ -33,5 +33,11 @@
   },
   "engines": {
     "node": ">=0.6 <0.10"
-  }
+  },
+  "licenses": [
+    {
+      "type": "MIT +no-false-attribs",
+      "url": "https://github.com/shinuza/captain-js/raw/master/LICENSE"
+    }
+  ]
 }
