@@ -374,6 +374,7 @@ var handlers = {
   run: function run() {
     process.env['NODE_PATH'] = path.resolve(PROJECT_ROOT, '..');
 
+    // TODO: Put this in settings
     var logs = path.join(cwd, 'logs'),
         out = fs.openSync(path.join(logs, 'out.log'), 'a'),
         err = fs.openSync(path.join(logs, 'err.log'), 'a');
@@ -390,6 +391,7 @@ var handlers = {
       var child = spawn(bin, [path.join(cwd, 'index.js')], options);
 
       if(program.fork) {
+        // TODO: Put this in settings
         fs.writeFileSync(path.join(cwd, 'node.pid'), String(child.pid));
         child.unref();
       }
