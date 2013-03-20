@@ -28,6 +28,7 @@ program
   .option('init [projectname]', 'Creates a new project')
   .option('-f, --force', 'Force operation (init, syncdb)')
   .option('-W, --watch', 'Watch for file changes (run)')
+  .option('-F, --fork', 'Fork to background (run)')
   .parse(process.argv);
 
 /**
@@ -371,11 +372,30 @@ var handlers = {
   },
 
   run: function run() {
-    if(isCaptainProject()) {
-      process.env['NODE_PATH'] = path.resolve(PROJECT_ROOT, '..');
-      var bin = program.watch ? path.resolve(PROJECT_ROOT, 'node_modules', '.bin', 'node-dev') : 'node';
+    process.env['NODE_PATH'] = path.resolve(PROJECT_ROOT, '..');
 
-      spawn(bin, [path.join(cwd, 'index.js')], { stdio: 'inherit' });
+    // TODO: Put this in settings
+    var logs = path.join(cwd, 'logs'),
+        out = fs.openSync(path.join(logs, 'out.log'), 'a'),
+        err = fs.openSync(path.join(logs, 'err.log'), 'a');
+
+    if(isCaptainProject()) {
+      var bin = program.watch
+        ? path.resolve(PROJECT_ROOT, 'node_modules', '.bin', 'node-dev')
+        : 'node';
+
+      var options = program.fork
+        ? { stdio: [ 'ignore', out, err ],  detached: true}
+        : { stdio: 'inherit' };
+
+      var child = spawn(bin, [path.join(cwd, 'index.js')], options);
+
+      if(program.fork) {
+        // TODO: Put this in settings
+        fs.writeFileSync(path.join(cwd, 'node.pid'), String(child.pid));
+        child.unref();
+      }
+
     } else {
       util.abort('Not a Captain project');
     }
