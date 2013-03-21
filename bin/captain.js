@@ -177,7 +177,7 @@ function isCaptainProject() {
 
 function files(name) {
   var index = [
-    , 'var captain = require(\'' + PROJECT_NAME + '\'),'
+      'var captain = require(\'' + PROJECT_NAME + '\'),'
     , '    conf = captain.conf;'
     , ''
     , 'captain.listen(conf.port, conf.host);'
