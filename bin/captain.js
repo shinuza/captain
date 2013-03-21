@@ -2,6 +2,7 @@
 var fs = require('fs'),
   os = require('os'),
   path = require('path'),
+  crypto = require('crypto'),
   join = path.join,
   resolve = path.resolve,
   dirname = path.dirname,
@@ -9,7 +10,9 @@ var fs = require('fs'),
 
 var program = require('commander'),
     async = require('async'),
-    util = require('captain-core/lib/util/console');
+    //TODO: Rename util -> terminal, move util/console -> util/terminal
+    util = require('captain-core/lib/util/console'),
+    uuid = require('captain-core/lib/util').uuid;
 
 var PKG = require('../package.json');
 var VERSION = PKG.version;
@@ -184,6 +187,14 @@ function files(name) {
   ].join(os.EOL);
 
 
+  var conf_dev = [
+      'module.exports = {'
+    , '  "db": "tcp://username:password@localhost/database",',
+    , '  "secret_key": "' + crypto.randomBytes(32).toString('base64') + '",',
+    , '  "uuid": "' + uuid() +'"',
+    , '}'
+  ].join(os.EOL);
+
   var pkg = [
     '{'
     , '  "name": "' + name + '",'
@@ -199,6 +210,7 @@ function files(name) {
   return {
     'index.js': index,
     'package.json': pkg,
+    'conf/developement.js': conf_dev,
     'README.md': '## ' + name
   };
 }
@@ -298,12 +310,16 @@ var handlers = {
       dirs(name, ['cache', 'media', 'logs', 'themes']);
 
       // Copying files
-      copyR(['assets', 'conf', 'themes/default'],  name);
+      copyR([join('themes','default')],  name);
 
       // Creating files
       var templates = files(name);
       Object.keys(templates).forEach(function(key) {
-        var p = path.join(name, key);
+        var p = join(name, key),
+            dir = dirname(key);
+        if(dir != '.') {
+          mkdir(join(name, dir));
+        }
         write(p, templates[key]);
       });
 
