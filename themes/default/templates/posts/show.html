@@ -1,9 +1,9 @@
 {% extends "layout.html" %}
 
-{% block title %}{{post.title}} - {{SITE_TITLE}}{% endblock %}
+{% block title %}{{post.title}} - {{site_title}}{% endblock %}
 
 {% block header %}
-<time datetime="{{post.created_at|date('c')}}">{{post.created_at|date(DATE_FORMAT)}}</time>
+<time datetime="{{post.created_at|date('c')}}">{{post.created_at|date(date_format)}}</time>
 <h1 class="title">{{post.title}}</h1>
 {% endblock %}
 
