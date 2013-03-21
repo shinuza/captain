@@ -100,7 +100,7 @@ function dirs(base, subs) {
 
 function copyR(files, target) {
   var from, to,
-    base = resolve(__dirname, '..');
+      base = resolve(__dirname, '..');
 
   files.forEach(function(file) {
     from = join(base, file);
