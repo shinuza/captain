@@ -296,7 +296,7 @@ var handlers = {
       console.log();
 
       // Creating dirs
-      dirs(name, ['cache', 'media', 'logs', 'conf', 'themes']);
+      dirs(name, ['cache', 'media', 'logs', 'themes']);
 
       // Copying files
       copyR(['assets', 'conf', 'themes/default'],  name);
