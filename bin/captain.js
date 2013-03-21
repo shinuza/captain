@@ -66,7 +66,7 @@ function copy(_in, _out) {
 }
 
 /**
- * Mkdir.
+ * Mkdir -p
  *
  * @param {String} path
  */
@@ -75,8 +75,6 @@ function mkdir(path) {
   if(!fs.existsSync(path)) {
     fs.mkdirSync(path, 0755);
     console.log(util.cyan(pad('create : ')) + path);
-  } else {
-    console.log(util.yellow(pad('dir exists : ')) + path);
   }
 }
 
