@@ -362,7 +362,7 @@ var handlers = {
     }
 
     if(isCaptainProject()) {
-      installTheme(target);
+      copyR([join('themes', target)],  '.');
     } else {
       util.abort('Not a Captain project');
     }
