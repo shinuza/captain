@@ -210,7 +210,7 @@ function files(name) {
   return {
     'index.js': index,
     'package.json': pkg,
-    'conf/developement.js': conf_dev,
+    'conf/development.js': conf_dev,
     'README.md': '## ' + name
   };
 }
