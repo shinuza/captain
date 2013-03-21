@@ -1,21 +1,21 @@
 #!/usr/bin/env node
 var fs = require('fs'),
-    os = require('os'),
-    path = require('path'),
-    spawn = require('child_process').spawn;
+  os = require('os'),
+  path = require('path'),
+  spawn = require('child_process').spawn,
+  join = require('path').join,
+  resolve = require('path').resolve;
 
 var program = require('commander'),
-    async = require('async'),
-    ncp = require('ncp'),
-    db = require('captain-core/lib/db'),
-    util = require('captain-core/lib/util');
+  async = require('async'),
+  util = require('captain-core/lib/util/console');
 
 var PKG = require('../package.json');
 var VERSION = PKG.version;
 var PROJECT_NAME = PKG.name;
 var cwd = process.cwd();
 
-const PROJECT_ROOT = path.resolve(__dirname, '..');
+const PROJECT_ROOT = resolve(__dirname, '..');
 
 program
   .version(VERSION)
@@ -61,7 +61,7 @@ function write(path, str) {
  */
 
 function copy(_in, _out) {
-  fs.writeFileSync(_out, fs.readFileSync(_in));
+  write(_out, fs.readFileSync(_in));
 }
 
 /**
@@ -90,45 +90,31 @@ function mkdir(path) {
 function dirs(base, subs) {
   mkdir(base);
   subs.forEach(function(sub) {
-    mkdir(path.join(base, sub));
+    mkdir(join(base, sub));
   });
 }
 
 /**
- * Install `theme` in `cwd/root`
+ * Like cp -R
  *
- * @param root
- * @param theme
  */
 
-function installTheme(root, theme, fn) {
-  var _in = path.join(PROJECT_ROOT, 'themes', theme);
-  var _out = path.join(cwd, root, 'themes', theme);
+function copyR(files, target) {
+  var from, to,
+    base = resolve(__dirname, '..');
 
-  //TODO: Replace ncp with own copy function
-  if(fs.existsSync(_in)) {
-    ncp(_in, _out, fn);
-  } else {
-    util.abort('Theme not found');
-  }
-}
+  files.forEach(function(file) {
+    from = join(base, file);
+    to = join(target, file);
 
-/**
- * Copy `asset` to `./assets/asset`
- *
- * @param {String} root
- * @param {Array} assets
- */
-
-function copyAssets(root, assets) {
-  var _file, _in, _out;
-
-  assets.forEach(function(asset) {
-    _file = path.join('assets', asset);
-    _in = path.join(PROJECT_ROOT, _file);
-    _out = path.join(cwd, root, _file);
-    copy(_in, _out);
-    console.log(util.cyan(pad('create : ')) + path.join(root, _file));
+    if(isDirectory(from)) {
+      mkdir(to);
+      fs.readdirSync(from).forEach(function(entry) {
+        copyR([join(file, entry)], target);
+      });
+    } else {
+      copy(from, to);
+    }
   });
 }
 
@@ -175,10 +161,10 @@ function isEmptyDirectory(path) {
 
 function isCaptainProject() {
   try {
-    var pkg = require(path.join(cwd, '/package.json'));
+    var pkg = require(join(cwd, '/package.json'));
     return pkg.dependencies &&
       Object.keys(pkg.dependencies)
-            .indexOf(PROJECT_NAME) !== -1;
+        .indexOf(PROJECT_NAME) !== -1;
   } catch(e) {
     if(e.code && e.code === 'MODULE_NOT_FOUND') {
       return false;
@@ -193,14 +179,14 @@ function isCaptainProject() {
 function files(name) {
   var index = [
     , 'var captain = require(\'' + PROJECT_NAME + '\'),'
-    , '    settings = captain.modules.settings;'
+    , '    conf = captain.conf;'
     , ''
-    , 'captain.listen(settings.get(\'PORT\'));'
+    , 'captain.listen(conf.port, conf.host);'
   ].join(os.EOL);
 
 
   var pkg = [
-      '{'
+    '{'
     , '  "name": "' + name + '",'
     , '  "description": "",'
     , '  "version": "0.0.1",'
@@ -222,6 +208,8 @@ function files(name) {
 var handlers = {
 
   createuser: function createuser() {
+    var db = require('captain-core/lib/db');
+
     program.prompt('username: ', function(username) {
       program.password('password: ', '*', function(password) {
         program.password('confirm password: ', '*', function(password2) {
@@ -245,6 +233,8 @@ var handlers = {
   },
 
   syncdb: function syncdb() {
+    var db = require('captain-core/lib/db');
+
     function fn(force) {
       db.syncDB({
         oncomplete: function(err) {
@@ -274,6 +264,8 @@ var handlers = {
   },
 
   loaddata: function loaddata(filename) {
+    var db = require('captain-core/lib/db');
+
     if(filename === true) {
       program.help();
     }
@@ -282,7 +274,7 @@ var handlers = {
 
     if(isDirectory(filename)) {
       fs.readdirSync(filename).forEach(function(file) {
-        files.push(path.join(filename, file));
+        files.push(join(filename, file));
       });
     } else {
       files.push(filename);
@@ -304,7 +296,10 @@ var handlers = {
       console.log();
 
       // Creating dirs
-      dirs(name, ['assets', 'cache', 'media', 'logs', 'themes']);
+      dirs(name, ['cache', 'media', 'logs', 'themes']);
+
+      // Copying files
+      copyR(['assets', 'conf', 'themes/default'],  name);
 
       // Creating files
       var templates = files(name);
@@ -313,24 +308,11 @@ var handlers = {
         write(p, templates[key]);
       });
 
-      // Copying assets
-      copyAssets(name, ['syndication.html']);
-
-      // Installing theme
-      installTheme(name, 'default', function(err) {
-        if(err) {
-          util.abort(err);
-        } else {
-          console.log();
-          console.log(util.cyan('Installing theme: '), 'default');
-        }
-
-        // Instructions
-        console.log();
-        console.log(util.cyan('Now run: '));
-        console.log(pad('cd ' + target));
-        console.log(pad('captain run'));
-      });
+      // Instructions
+      console.log();
+      console.log(util.cyan('Now run: '));
+      console.log(pad('cd ' + target));
+      console.log(pad('captain run'));
     }
 
     if(target === true) {
@@ -353,7 +335,7 @@ var handlers = {
   },
 
   themes: function themes() {
-    var themes = fs.readdirSync(path.join(PROJECT_ROOT, 'themes'));
+    var themes = fs.readdirSync(join(PROJECT_ROOT, 'themes'));
 
     console.log(util.cyan('Available themes:'));
     console.log(themes.map(pad).join(os.EOL));
@@ -365,34 +347,34 @@ var handlers = {
     }
 
     if(isCaptainProject()) {
-        installTheme(target);
+      installTheme(target);
     } else {
       util.abort('Not a Captain project');
     }
   },
 
   run: function run() {
-    process.env['NODE_PATH'] = path.resolve(PROJECT_ROOT, '..');
+    process.env['NODE_PATH'] = resolve(PROJECT_ROOT, '..');
 
     // TODO: Put this in settings
-    var logs = path.join(cwd, 'logs'),
-        out = fs.openSync(path.join(logs, 'out.log'), 'a'),
-        err = fs.openSync(path.join(logs, 'err.log'), 'a');
+    var logs = join(cwd, 'logs'),
+      out = fs.openSync(join(logs, 'out.log'), 'a'),
+      err = fs.openSync(join(logs, 'err.log'), 'a');
 
     if(isCaptainProject()) {
       var bin = program.watch
-        ? path.resolve(PROJECT_ROOT, 'node_modules', '.bin', 'node-dev')
+        ? resolve(PROJECT_ROOT, 'node_modules', '.bin', 'node-dev')
         : 'node';
 
       var options = program.fork
         ? { stdio: [ 'ignore', out, err ],  detached: true}
         : { stdio: 'inherit' };
 
-      var child = spawn(bin, [path.join(cwd, 'index.js')], options);
+      var child = spawn(bin, [join(cwd, 'index.js')], options);
 
       if(program.fork) {
         // TODO: Put this in settings
-        fs.writeFileSync(path.join(cwd, 'node.pid'), String(child.pid));
+        fs.writeFileSync(join(cwd, 'node.pid'), String(child.pid));
         child.unref();
       }
 
@@ -400,7 +382,6 @@ var handlers = {
       util.abort('Not a Captain project');
     }
   }
-
 };
 
 var option = program.options
