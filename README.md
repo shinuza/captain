@@ -20,7 +20,8 @@ This will create the project folder structure, which looks like this:
     $ ls myblog
     └─┬  assets/
       ├─ cache/
-      ├─ conf/
+      ├┬ conf/
+      │└ development.js
       ├─ logs/
       ├─ media/
       ├─ themes/
@@ -28,9 +29,11 @@ This will create the project folder structure, which looks like this:
       ├─ package.json
       └─ README.md
 
-The last step is to launch your application
+You need to edit the `db` value in the configuration file so captain can connect to your postgreSQL server.
+Once down, run:
 
     $ cd myblog
+    $ captain syncdb
     $ captain run
 
 The default port for Captain is 3000. If you visit http://localhost:3000 you

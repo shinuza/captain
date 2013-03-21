@@ -325,8 +325,9 @@ var handlers = {
 
       // Instructions
       console.log();
-      console.log(util.cyan('Now run: '));
+      console.log(util.cyan('Now, configure postgres server and run: '));
       console.log(pad('cd ' + target));
+      console.log(pad('captain syncdb'));
       console.log(pad('captain run'));
     }
 
