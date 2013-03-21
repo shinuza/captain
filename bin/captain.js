@@ -2,13 +2,14 @@
 var fs = require('fs'),
   os = require('os'),
   path = require('path'),
-  spawn = require('child_process').spawn,
-  join = require('path').join,
-  resolve = require('path').resolve;
+  join = path.join,
+  resolve = path.resolve,
+  dirname = path.dirname,
+  spawn = require('child_process').spawn;
 
 var program = require('commander'),
-  async = require('async'),
-  util = require('captain-core/lib/util/console');
+    async = require('async'),
+    util = require('captain-core/lib/util/console');
 
 var PKG = require('../package.json');
 var VERSION = PKG.version;
