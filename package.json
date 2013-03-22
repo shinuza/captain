@@ -27,6 +27,9 @@
     "async": "~0.2.6",
     "node-dev": "~2.0.0"
   },
+  "devDependencies": {
+    "markdox": "~0.1.2"
+  },
   "bin": {
     "captain": "./bin/captain.js"
   },
