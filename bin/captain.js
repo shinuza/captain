@@ -10,17 +10,15 @@ var fs = require('fs'),
 var program = require('commander'),
     async = require('async'),
     terminal = require('captain-core/lib/util/terminal'),
-    uuid = require('captain-core/lib/util').uuid,
-    helpers = require('../helpers');
+    helpers = require('../lib/helpers');
 
-var PKG = require('../package.json'),
-    VERSION = PKG.version,
+var pkg = require('../package.json'),
     cwd = process.cwd();
 
 const PROJECT_ROOT = resolve(__dirname, '..');
 
 program
-  .version(VERSION)
+  .version(pkg.version)
   .option('create_user', 'Creates a user account')
   .option('syncdb', 'Synchronise all definitions')
   .option('load_data [filename]', 'Loads data')
@@ -32,6 +30,7 @@ program
   .option('-W, --watch', 'Watch for file changes (run)')
   .option('-F, --fork', 'Fork to background (run)')
   .parse(process.argv);
+
 
 /**
  *
@@ -129,53 +128,53 @@ function load_data(filename) {
  */
 
 function init(target) {
-    function fn(name) {
-      console.log();
-      console.log(terminal.cyan('Creating project: ') + name);
-      console.log();
+  function fn(name) {
+    console.log();
+    console.log(terminal.cyan('Creating project: ') + name);
+    console.log();
 
-      // Creating dirs
-      helpers.dirs(name, ['cache', 'media', 'logs', 'themes']);
+    // Creating dirs
+    helpers.dirs(name, ['cache', 'media', 'logs', 'themes']);
 
-      // Copying files
-      helpers.copyR([join('themes','default')],  name);
+    // Copying files
+    helpers.copyR([join('themes','default')],  name);
 
-      // Creating files
-      var templates = files(name);
-      Object.keys(templates).forEach(function(key) {
-        var p = join(name, key),
-            dir = dirname(key);
-        if(dir != '.') {
-          helpers.mkdir(join(name, dir));
-        }
-        helpers.write(p, templates[key]);
-      });
+    // Creating files
+    var templates = helpers.files(name);
+    Object.keys(templates).forEach(function(key) {
+      var p = join(name, key),
+          dir = dirname(key);
+      if(dir != '.') {
+        helpers.mkdir(join(name, dir));
+      }
+      helpers.write(p, templates[key]);
+    });
 
-      // Instructions
-      console.log();
-      console.log(terminal.cyan('Now, configure postgres server and run: '));
-      console.log(pad('cd ' + target));
-      console.log(pad('captain syncdb'));
-      console.log(pad('captain run'));
-    }
+    // Instructions
+    console.log();
+    console.log(terminal.cyan('Now, configure postgres server and run: '));
+    console.log(helpers.pad('cd ' + target));
+    console.log(helpers.pad('captain syncdb'));
+    console.log(helpers.pad('captain run'));
+  }
 
-    if(target === true) {
-        program.help();
-    }
+  if(target === true) {
+      program.help();
+  }
 
-    if(fs.existsSync(target) && !isEmptyDirectory(target) && !program.force) {
-      program.prompt('Directory not empty, force create? (y/n): ', function(answer) {
-        var forceCreate = !!answer.match(/y|yes|arrr/i);
+  if(fs.existsSync(target) && !helpers.isEmptyDirectory(target) && !program.force) {
+    program.prompt('Directory not empty, force create? (y/n): ', function(answer) {
+      var forceCreate = !!answer.match(/y|yes|arrr/i);
 
-        if(forceCreate) {
-          fn(target);
-        } else {
-          terminal.abort('Cowardly refusing to init project in a non-empty directory');
-        }
-      });
-    } else {
-      fn(target);
-    }
+      if(forceCreate) {
+        fn(target);
+      } else {
+        terminal.abort('Cowardly refusing to init project in a non-empty directory');
+      }
+    });
+  } else {
+    fn(target);
+  }
 }
 
 /**
@@ -186,7 +185,7 @@ function themes() {
   var themes = fs.readdirSync(join(PROJECT_ROOT, 'themes'));
 
   console.log(terminal.cyan('Available themes:'));
-  console.log(themes.map(pad).join(os.EOL));
+  console.log(themes.map(helpers.pad).join(os.EOL));
 }
 
 /**
@@ -198,7 +197,7 @@ function theme(target) {
     program.help();
   }
 
-  if(isCaptainProject()) {
+  if(helpers.isCaptainProject()) {
     helpers.copyR([join('themes', target)],  '.');
   } else {
     terminal.abort('Not a Captain project');
@@ -217,7 +216,7 @@ function run() {
       out = fs.openSync(join(logs, 'out.log'), 'a'),
       err = fs.openSync(join(logs, 'err.log'), 'a');
 
-  if(isCaptainProject()) {
+  if(helpers.isCaptainProject()) {
     var bin = program.watch
         ? resolve(PROJECT_ROOT, 'node_modules', '.bin', 'node-dev')
         : 'node';
