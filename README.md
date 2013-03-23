@@ -1,9 +1,5 @@
-# Captain
-
-## Requirements
-
-  * node.js > 0.6 < 0.10
-  * postgreSQL > 8
+Captain.js is simple, yet powerful blog engine for node.js.
+It's extensible, fast and features a RESTful API with smart content negotiation.
 
 ## Getting started
 
@@ -38,3 +34,8 @@ Once down, run:
 
 The default port for Captain is 3000. If you visit http://localhost:3000 you
 will see the welcome page.
+
+## Requirements
+
+  * node.js > 0.6 < 0.10
+  * postgreSQL > 8
