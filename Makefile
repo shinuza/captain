@@ -1,6 +1,6 @@
 default: docs
 
 docs:
-	@node_modules/.bin/markdox bin/captain.js
+	@bin/docs.js
 
 .PHONY: docs
