@@ -20,7 +20,7 @@ const PROJECT_ROOT = resolve(__dirname, '..');
 program
   .version(pkg.version)
   .option('create_user', 'Creates a user account')
-  .option('syncdb', 'Synchronise all definitions')
+  .option('syncdb', 'Synchronize all models')
   .option('load_data [filename]', 'Loads data')
   .option('themes', 'Display available themes')
   .option('theme [theme]', 'Install theme')
@@ -33,6 +33,9 @@ program
 
 
 /**
+ * Usage: captain create_user
+ *
+ * Creates a user
  *
  */
 
@@ -62,6 +65,9 @@ function create_user() {
 }
 
 /**
+ * Usage: captain syncdb [--force]
+ *
+ * Synchronize all models
  *
  */
 
@@ -95,6 +101,9 @@ function syncdb() {
 }
 
 /**
+ * Usage: captain load_data <path>
+ *
+ * Loads <path> if a file, or each files in <path> if a directory
  *
  */
 
@@ -124,6 +133,10 @@ function load_data(filename) {
 }
 
 /**
+ * Usage: captain init <name> [--force]
+ *
+ * Creates a new project.
+ * Use --force if directory <name> already exists
  *
  */
 
@@ -178,6 +191,9 @@ function init(target) {
 }
 
 /**
+ * Usage: captain themes
+ *
+ * Lists available themes
  *
  */
 
@@ -189,6 +205,9 @@ function themes() {
 }
 
 /**
+ * Usage: captain theme <theme>
+ *
+ * Install theme
  *
  */
 
@@ -205,6 +224,16 @@ function theme(target) {
 }
 
 /**
+ * Usage: captain run[--watch] [--fork]
+ *
+ * Runs captain project
+ *
+ * * Use --watch to restart
+ * * Use --fork to create a daemon
+ *
+ * When using --fork, captain will redirect
+ * stdout to logs/out.log, stderr to logs/err.log,
+ * and write the process' pid to node.pid.
  *
  */
 
