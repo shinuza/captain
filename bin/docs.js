@@ -7,7 +7,7 @@ var markdox = require('markdox');
 
 var PROJECT_ROOT = resolve(__dirname, '..');
 
-mkdir(join(PROJECT_ROOT, 'docs'));
+mkdir(join(PROJECT_ROOT, 'docs'), true);
 markdox.process([join(__dirname, 'captain.js')], join(PROJECT_ROOT, 'docs', 'docs.md'), function() {
   console.log('Generated', join('docs', 'docs.md'));
 });
