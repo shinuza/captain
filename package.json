@@ -24,8 +24,7 @@
     "captain-core": "~0.21.19",
     "captain-admin": "~0.5.7",
     "commander": "~1.1.1",
-    "async": "~0.2.6",
-    "node-dev": "~2.0.0"
+    "async": "~0.2.6"
   },
   "devDependencies": {
     "markdox": "~0.1.2"
