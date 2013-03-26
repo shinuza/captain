@@ -5,21 +5,29 @@ It's extensible, fast and features a RESTful API with smart content negotiation.
 
 With node installed ([download](http://nodejs.org/download/)), you will need the `captain` executable
 
-    $ sudo npm install captain -g
+```sh
+$ sudo npm install captain -g
+```
 
 Then you will need to create a new project
 
-    $ captain init myblog
-    $ cd myblog
+```sh
+$ captain init myblog
+$ cd myblog
+```
 
 Then edit the `db` value in the configuration file (conf/development.js), and run:
 
-    $ captain syncdb
-    $ captain create_user
+```sh
+$ captain syncdb
+$ captain create_user
+```
 
 Follow the instructions, and finally:
 
-    $ captain run
+```sh
+$ captain run
+```
 
 The default port for Captain is 3000.
 If you visit http://localhost:3000 you will see the welcome page.
