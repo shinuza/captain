@@ -175,7 +175,7 @@ function init(target) {
       program.help();
   }
 
-  if(fs.existsSync(target) && !helpers.isEmptyDirectory(target) && !program.force) {
+  if(helpers.exists(target) && !helpers.isEmptyDirectory(target) && !program.force) {
     program.prompt('Directory not empty, force create? (y/n): ', function(answer) {
       var forceCreate = !!answer.match(/y|yes|arrr/i);
 
@@ -201,7 +201,7 @@ function themes() {
   var themes = fs.readdirSync(join(PROJECT_ROOT, 'themes'));
 
   console.log(terminal.cyan('Available themes:'));
-  console.log(themes.map(helpers.pad).join(os.EOL));
+  console.log(themes.map(helpers.pad).join(helpers.EOL));
 }
 
 /**
