@@ -150,6 +150,7 @@ function init(target) {
 
     // Copying files
     helpers.copyR([join('themes','default')],  name);
+    helpers.copyR([join('themes','syndication.html')], name);
 
     // Creating files
     var templates = helpers.files(name);
