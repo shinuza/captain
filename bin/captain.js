@@ -168,6 +168,7 @@ function init(target) {
     console.log(terminal.cyan('Now, configure postgres server and run: '));
     console.log(helpers.pad('cd ' + target));
     console.log(helpers.pad('captain syncdb'));
+    console.log(helpers.pad('captain create_user'));
     console.log(helpers.pad('captain run'));
   }
 
@@ -240,30 +241,41 @@ function theme(target) {
 function run() {
   process.env['NODE_PATH'] = resolve(PROJECT_ROOT, '..');
 
-  // TODO: Put this in settings
-  var logs = join(cwd, 'logs'),
+  helpers.countUsers(function(err, count) {
+    if(err) { throw err; }
+    if(count > 0) {
+      _run();
+    } else {
+      terminal.abort('You need to create at least one user with `captain create_user`');
+    }
+  });
+
+
+  function _run() {
+    // TODO: Put this in settings
+    var logs = join(cwd, 'logs'),
       out = fs.openSync(join(logs, 'out.log'), 'a'),
       err = fs.openSync(join(logs, 'err.log'), 'a');
 
-  if(helpers.isCaptainProject()) {
-    var bin = program.watch
+    if(helpers.isCaptainProject()) {
+      var bin = program.watch
         ? resolve(PROJECT_ROOT, 'node_modules', '.bin', 'node-dev')
         : 'node';
 
-    var options = program.fork
+      var options = program.fork
         ? { stdio: [ 'ignore', out, err ],  detached: true}
         : { stdio: 'inherit' };
 
-    var child = spawn(bin, [join(cwd, 'index.js')], options);
+      var child = spawn(bin, [join(cwd, 'index.js')], options);
 
-    if(program.fork) {
-      // TODO: Put this in settings
-      fs.writeFileSync(join(cwd, 'node.pid'), String(child.pid));
-      child.unref();
+      if(program.fork) {
+        // TODO: Put this in settings
+        fs.writeFileSync(join(cwd, 'node.pid'), String(child.pid));
+        child.unref();
+      }
+    } else {
+      terminal.abort('Not a Captain project');
     }
-
-  } else {
-    terminal.abort('Not a Captain project');
   }
 }
 
