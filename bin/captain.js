@@ -1,6 +1,5 @@
 #!/usr/bin/env node
 var fs = require('fs'),
-    os = require('os'),
     path = require('path'),
     join = path.join,
     resolve = path.resolve,
