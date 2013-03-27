@@ -36,3 +36,5 @@ If you visit http://localhost:3000 you will see the welcome page.
 
   * node.js >= 0.6 < 0.10
   * postgreSQL > 8
+
+Note: Captain have not been tested on windows
