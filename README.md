@@ -34,7 +34,7 @@ If you visit http://localhost:3000 you will see the welcome page.
 
 ## Requirements
 
-  * node.js >= 0.6 < 0.10
+  * node.js >= 0.6
   * postgreSQL > 8
 
 Note: Captain have not been tested on windows
