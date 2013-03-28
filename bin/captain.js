@@ -19,15 +19,17 @@ const PROJECT_ROOT = resolve(__dirname, '..');
 program
   .version(pkg.version)
   .option('create_user', 'Creates a user account')
-  .option('syncdb', 'Synchronize all models')
+  .option('syncdb [options]', 'Synchronize all models')
   .option('load_data [filename]', 'Loads data')
   .option('themes', 'Display available themes')
   .option('theme [theme]', 'Install theme')
   .option('run', 'Run captain project')
   .option('init [projectname]', 'Creates a new project')
-  .option('-f, --force', 'Force operation (init, syncdb)')
+  .option('--force', 'Force operation (init, syncdb)')
+  .option('--drop', 'Drop databases (syncdb)')
   .option('-W, --watch', 'Watch for file changes (run)')
-  .option('-F, --fork', 'Fork to background (run)')
+  .option('--fork', 'Fork to background (run)')
+  .option('--verbose', 'Verbose output')
   .parse(process.argv);
 
 
@@ -73,7 +75,7 @@ function create_user() {
 function syncdb() {
   var db = require('captain-core/lib/db');
 
-  function fn(force) {
+  function fn(drop) {
     db.syncDB({
       oncomplete: function(err) {
         if(err) {
@@ -82,20 +84,30 @@ function syncdb() {
           terminal.exit('\nAll done\n\n');
         }
       },
-      onprogress: function(script) {
-        console.log('Running: \n========\n%s\n', script);
+      onprogress: function(script, file) {
+        console.log('Executing:', file);
+        if(program.verbose) {
+          console.log('========\n%s\n', script);
+        }
       },
-      forceDrop: force
+      drop: drop
     });
   }
 
-  if(program.force) {
-    fn(true);
+  if(program.drop) {
+    if(!program.force) {
+      program.prompt('This will drop all databases, are you sure you want to proceed? (y/N): ', function(answer) {
+        if(!!answer.match(/y|yes|arrr/i)) {
+          fn(true);
+        } else {
+          terminal.exit('Exiting.');
+        }
+      });
+    } else {
+      fn(true);
+    }
   } else {
-    program.prompt('Force drop? (y/n): ', function(answer) {
-      var force = !!answer.match(/y|yes|arrr/i);
-      fn(force);
-    });
+    fn(false);
   }
 }
 
