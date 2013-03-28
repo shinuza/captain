@@ -279,6 +279,8 @@ function run() {
         : { stdio: 'inherit' };
 
       var child = spawn(bin, [join(cwd, 'index.js')], options);
+      var conf = require('captain-core').conf;
+      console.log(terminal.cyan('Your application is running at: ') + 'http://%s:%d', conf.host, conf.port);
 
       if(program.fork) {
         // TODO: Put this in settings
