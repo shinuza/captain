@@ -71,6 +71,7 @@ function create_user(options) {
   });
 }
 
+
 /**
  * Usage: captain syncdb [--force]
  *
@@ -81,16 +82,16 @@ function create_user(options) {
 function syncdb() {
   var db = require('captain-core/lib/db');
 
-  function fn(drop) {
+  function _syncdb(drop) {
     db.syncDB({
-      oncomplete: function(err) {
+      complete: function(err) {
         if(err) {
           terminal.abort('Failed syncing', err);
         } else {
           terminal.exit('\nAll done\n\n');
         }
       },
-      onprogress: function(script, file) {
+      progress: function(script, file) {
         console.log('Executing:', file);
         if(program.verbose) {
           console.log('========\n%s\n', script);
@@ -110,10 +111,10 @@ function syncdb() {
         }
       });
     } else {
-      fn(true);
+      _syncdb(true);
     }
   } else {
-    fn(false);
+    _syncdb(false);
   }
 }
 
