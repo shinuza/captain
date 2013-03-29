@@ -150,6 +150,25 @@ function load_data(filename) {
   });
 }
 
+function prompt_uri(cb) {
+  console.log();
+  program.prompt(
+    'Please enter the connection uri to PostgreSQL in\nthe form of ' +
+    'pg://username:password@hostname/database: ', function(answer) {
+      helpers.connectionTest(answer, function(err, success) {
+        console.log();
+        if(err) {
+          console.error(terminal.red('Connection test failed'));
+          console.error(terminal.red(err.message));
+          prompt_uri(cb);
+        }
+        if(success === true) {
+          cb(answer);
+        }
+      });
+    });
+}
+
 /**
  * Usage: captain init <name> [--force]
  *
