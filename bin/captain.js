@@ -40,8 +40,15 @@ program
  *
  */
 
-function create_user() {
-  var db = require('captain-core/lib/db');
+function create_user(options) {
+  options = options || {};
+  var db = require('captain-core/lib/db'),
+      success = options.success || function() {
+        terminal.exit('\nUser created!\n\n');
+      },
+      error = options.error || function(err) {
+        terminal.abort('Failed to created user', err);
+      };
 
   program.prompt('username: ', function(username) {
     program.password('password: ', '*', function(password) {
@@ -51,12 +58,11 @@ function create_user() {
         }
         program.prompt('email: ', function(email) {
           var body = {username: username, password: password, email: email};
-
           db.users.create(body, function(err) {
             if(err) {
-              terminal.abort('Failed to created user', err);
+              error(err);
             } else {
-              terminal.exit('\nUser created!\n\n');
+              success();
             }
           });
         });
