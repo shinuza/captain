@@ -178,7 +178,8 @@ function prompt_uri(cb) {
  */
 
 function init(target) {
-  function fn(name) {
+
+  function create_project(name, uri) {
     console.log();
     console.log(terminal.cyan('Creating project: ') + name);
     console.log();
@@ -191,10 +192,14 @@ function init(target) {
     helpers.copyR([join('themes','syndication.html')], name);
 
     // Creating files
-    var templates = helpers.files(name);
+    var templates = helpers.files({
+      name: name,
+      uri: uri
+    });
     Object.keys(templates).forEach(function(key) {
       var p = join(name, key),
           dir = dirname(key);
+
       if(dir != '.') {
         helpers.mkdir(join(name, dir));
       }
@@ -203,15 +208,54 @@ function init(target) {
 
     // Instructions
     console.log();
-    console.log(terminal.cyan('Now, configure postgres server and run: '));
     console.log(helpers.pad('cd ' + target));
-    console.log(helpers.pad('captain syncdb'));
-    console.log(helpers.pad('captain create_user'));
     console.log(helpers.pad('captain run'));
+
   }
 
   if(target === true) {
       program.help();
+  }
+
+  function _init() {
+    console.log();
+    console.log(terminal.cyan('Initializing project: ') + target);
+    // Testing connection
+    prompt_uri(function(uri) {
+      var db = require('captain-core/lib/db');
+      console.info(terminal.cyan('Connection successful!'));
+      console.log();
+      console.info(terminal.cyan('Creating database schema...'));
+
+      // Synchronizing database
+      db.syncDB({
+        uri: uri,
+        complete: function(err) {
+          if(err) {
+            terminal.abort(err);
+          }
+          console.log();
+          console.info(terminal.cyan('Done!'));
+          console.log();
+          console.info(terminal.cyan('Creating first user...'));
+          console.log();
+
+          // Creating user
+          create_user({
+            success: function() {
+              console.log();
+              console.info(terminal.cyan('Done!'));
+              console.log();
+              setTimeout(function() {
+                // Creating project
+                create_project(target, uri);
+                terminal.exit('Done!')
+              }, 500);
+            }
+          });
+        }
+      });
+    });
   }
 
   if(helpers.exists(target) && !helpers.isEmptyDirectory(target) && !program.force) {
@@ -219,13 +263,13 @@ function init(target) {
       var forceCreate = !!answer.match(/y|yes|arrr/i);
 
       if(forceCreate) {
-        fn(target);
+        _init();
       } else {
         terminal.abort('Cowardly refusing to init project in a non-empty directory');
       }
     });
   } else {
-    fn(target);
+    _init();
   }
 }
 

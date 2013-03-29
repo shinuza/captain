@@ -13,19 +13,12 @@ Then you will need to create a new project
 
 ```sh
 $ captain init myblog
-$ cd myblog
-```
-
-Then edit the `db` value in the configuration file (conf/development.js), and run:
-
-```sh
-$ captain syncdb
-$ captain create_user
 ```
 
 Follow the instructions, and finally:
 
 ```sh
+$ cd myblog
 $ captain run
 ```
 
