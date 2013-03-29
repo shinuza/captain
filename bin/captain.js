@@ -40,8 +40,15 @@ program
  *
  */
 
-function create_user() {
-  var db = require('captain-core/lib/db');
+function create_user(options) {
+  options = options || {};
+  var db = require('captain-core/lib/db'),
+      success = options.success || function() {
+        terminal.exit('\nUser created!\n\n');
+      },
+      error = options.error || function(err) {
+        terminal.abort('Failed to created user', err);
+      };
 
   program.prompt('username: ', function(username) {
     program.password('password: ', '*', function(password) {
@@ -51,12 +58,11 @@ function create_user() {
         }
         program.prompt('email: ', function(email) {
           var body = {username: username, password: password, email: email};
-
           db.users.create(body, function(err) {
             if(err) {
-              terminal.abort('Failed to created user', err);
+              error(err);
             } else {
-              terminal.exit('\nUser created!\n\n');
+              success();
             }
           });
         });
@@ -64,6 +70,7 @@ function create_user() {
     });
   });
 }
+
 
 /**
  * Usage: captain syncdb [--force]
@@ -75,16 +82,16 @@ function create_user() {
 function syncdb() {
   var db = require('captain-core/lib/db');
 
-  function fn(drop) {
+  function _syncdb(drop) {
     db.syncDB({
-      oncomplete: function(err) {
+      complete: function(err) {
         if(err) {
           terminal.abort('Failed syncing', err);
         } else {
           terminal.exit('\nAll done\n\n');
         }
       },
-      onprogress: function(script, file) {
+      progress: function(script, file) {
         console.log('Executing:', file);
         if(program.verbose) {
           console.log('========\n%s\n', script);
@@ -104,10 +111,10 @@ function syncdb() {
         }
       });
     } else {
-      fn(true);
+      _syncdb(true);
     }
   } else {
-    fn(false);
+    _syncdb(false);
   }
 }
 
@@ -143,6 +150,25 @@ function load_data(filename) {
   });
 }
 
+function prompt_uri(cb) {
+  console.log();
+  program.prompt(
+    'Please enter the connection uri to PostgreSQL in\nthe form of ' +
+    'pg://username:password@hostname/database: ', function(answer) {
+      helpers.connectionTest(answer, function(err, success) {
+        console.log();
+        if(err) {
+          console.error(terminal.red('Connection test failed'));
+          console.error(terminal.red(err.message));
+          prompt_uri(cb);
+        }
+        if(success === true) {
+          cb(answer);
+        }
+      });
+    });
+}
+
 /**
  * Usage: captain init <name> [--force]
  *
@@ -152,7 +178,8 @@ function load_data(filename) {
  */
 
 function init(target) {
-  function fn(name) {
+
+  function create_project(name, uri) {
     console.log();
     console.log(terminal.cyan('Creating project: ') + name);
     console.log();
@@ -165,10 +192,14 @@ function init(target) {
     helpers.copyR([join('themes','syndication.html')], name);
 
     // Creating files
-    var templates = helpers.files(name);
+    var templates = helpers.files({
+      name: name,
+      uri: uri
+    });
     Object.keys(templates).forEach(function(key) {
       var p = join(name, key),
           dir = dirname(key);
+
       if(dir != '.') {
         helpers.mkdir(join(name, dir));
       }
@@ -177,15 +208,54 @@ function init(target) {
 
     // Instructions
     console.log();
-    console.log(terminal.cyan('Now, configure postgres server and run: '));
     console.log(helpers.pad('cd ' + target));
-    console.log(helpers.pad('captain syncdb'));
-    console.log(helpers.pad('captain create_user'));
     console.log(helpers.pad('captain run'));
+
   }
 
   if(target === true) {
       program.help();
+  }
+
+  function _init() {
+    console.log();
+    console.log(terminal.cyan('Initializing project: ') + target);
+    // Testing connection
+    prompt_uri(function(uri) {
+      var db = require('captain-core/lib/db');
+      console.info(terminal.cyan('Connection successful!'));
+      console.log();
+      console.info(terminal.cyan('Creating database schema...'));
+
+      // Synchronizing database
+      db.syncDB({
+        uri: uri,
+        complete: function(err) {
+          if(err) {
+            terminal.abort(err);
+          }
+          console.log();
+          console.info(terminal.cyan('Done!'));
+          console.log();
+          console.info(terminal.cyan('Creating first user...'));
+          console.log();
+
+          // Creating user
+          create_user({
+            success: function() {
+              console.log();
+              console.info(terminal.cyan('Done!'));
+              console.log();
+              setTimeout(function() {
+                // Creating project
+                create_project(target, uri);
+                terminal.exit('Done!')
+              }, 500);
+            }
+          });
+        }
+      });
+    });
   }
 
   if(helpers.exists(target) && !helpers.isEmptyDirectory(target) && !program.force) {
@@ -193,13 +263,13 @@ function init(target) {
       var forceCreate = !!answer.match(/y|yes|arrr/i);
 
       if(forceCreate) {
-        fn(target);
+        _init();
       } else {
         terminal.abort('Cowardly refusing to init project in a non-empty directory');
       }
     });
   } else {
-    fn(target);
+    _init();
   }
 }
 
