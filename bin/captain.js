@@ -1,18 +1,18 @@
 #!/usr/bin/env node
-var fs = require('fs'),
-    path = require('path'),
-    join = path.join,
-    resolve = path.resolve,
-    dirname = path.dirname,
-    spawn = require('child_process').spawn;
 
-var program = require('commander'),
-    async = require('async'),
-    terminal = require('captain-core/lib/util/terminal'),
-    helpers = require('../lib/helpers');
+var fs = require('fs')
+  , path = require('path')
+  , join = path.join
+  , resolve = path.resolve
+  , dirname = path.dirname
+  , spawn = require('child_process').spawn
 
-var pkg = require('../package.json'),
-    cwd = process.cwd();
+  , program = require('commander')
+  , async = require('async')
+  , terminal = require('captain-core/lib/util/terminal')
+  , helpers = require('../lib/helpers')
+  , pkg = require('../package.json')
+  , cwd = process.cwd();
 
 const PROJECT_ROOT = resolve(__dirname, '..');
 
@@ -42,13 +42,12 @@ program
 
 function create_user(options) {
   options = options || {};
-  var db = require('captain-core/lib/db'),
-      success = options.success || function() {
-        terminal.exit('\nUser created!\n\n');
-      },
-      error = options.error || function(err) {
-        terminal.abort('Failed to created user', err);
-      };
+
+   var success = options.success || function() {
+     terminal.exit('\nUser created!\n\n');
+   }, error = options.error || function(err) {
+     terminal.abort('Failed to created user', err);
+   };
 
   program.prompt('username: ', function(username) {
     program.password('password: ', '*', function(password) {
@@ -57,7 +56,9 @@ function create_user(options) {
           terminal.abort('Password do not match, bailing out.');
         }
         program.prompt('email: ', function(email) {
-          var body = {username: username, password: password, email: email};
+          var body = {username: username, password: password, email: email}
+            , db = require('captain-core/lib/db');
+
           db.users.create(body, function(err) {
             if(err) {
               error(err);
@@ -65,6 +66,7 @@ function create_user(options) {
               success();
             }
           });
+
         });
       });
     });
@@ -80,9 +82,9 @@ function create_user(options) {
  */
 
 function syncdb() {
-  var db = require('captain-core/lib/db');
-
   function _syncdb(drop) {
+    var db = require('captain-core/lib/db');
+
     db.syncDB({
       complete: function(err) {
         if(err) {
@@ -126,8 +128,8 @@ function syncdb() {
  */
 
 function load_data(filename) {
-  var files = [],
-      db = require('captain-core/lib/db');
+  var files = []
+    , db = require('captain-core/lib/db');
 
   if(filename === true) {
     program.help();
@@ -195,6 +197,7 @@ function init(target) {
       name: name,
       uri: uri
     });
+
     Object.keys(templates).forEach(function(key) {
       var p = join(name, key),
           dir = dirname(key);
@@ -204,12 +207,6 @@ function init(target) {
       }
       helpers.write(p, templates[key]);
     });
-
-    // Instructions
-    console.log();
-    console.log(helpers.pad('cd ' + target));
-    console.log(helpers.pad('captain run'));
-
   }
 
   if(target === true) {
@@ -221,12 +218,19 @@ function init(target) {
     console.log(terminal.cyan('Initializing project: ') + target);
     // Testing connection
     prompt_uri(function(uri) {
-      var db = require('captain-core/lib/db');
       console.info(terminal.cyan('Connection successful!'));
       console.log();
       console.info(terminal.cyan('Creating database schema...'));
 
+      // Creating projects files
+      create_project(target, uri);
+
       // Synchronizing database
+      var db = require('captain-core/lib/db');
+      var conf = require('captain-core').conf;
+
+
+      conf.reload(join(cwd, target));
       db.syncDB({
         uri: uri,
         complete: function(err) {
@@ -241,15 +245,17 @@ function init(target) {
 
           // Creating user
           create_user({
+            no_commit: true,
             success: function() {
+
+              // Instructions
               console.log();
               console.info(terminal.cyan('Done!'));
               console.log();
-              setTimeout(function() {
-                // Creating project
-                create_project(target, uri);
-                terminal.exit('Done!')
-              }, 500);
+              console.info(terminal.cyan('Now run:'));
+              console.log(helpers.pad('cd ' + target));
+              console.log(helpers.pad('captain run'));
+              terminal.exit('');
             }
           });
         }
@@ -334,9 +340,9 @@ function run() {
 
   function _run() {
     // TODO: Put this in settings
-    var logs = join(cwd, 'logs'),
-      out = fs.openSync(join(logs, 'out.log'), 'a'),
-      err = fs.openSync(join(logs, 'err.log'), 'a');
+    var logs = join(cwd, 'logs')
+      , out = fs.openSync(join(logs, 'out.log'), 'a')
+      , err = fs.openSync(join(logs, 'err.log'), 'a');
 
     if(helpers.isCaptainProject()) {
       var bin = program.watch
@@ -364,13 +370,13 @@ function run() {
 
 // Handlers
 var handlers = {
-  create_user: create_user,
-  syncdb: syncdb,
-  load_data: load_data,
-  init: init,
-  themes: themes,
-  theme: theme,
-  run: run
+    create_user: create_user
+  , syncdb: syncdb
+  , load_data: load_data
+  , init: init
+  , themes: themes
+  , theme: theme
+  , run: run
 };
 
 var option = program.options
