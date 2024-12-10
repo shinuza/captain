@@ -62,9 +62,10 @@ func NewS3Provider(bucket, region, endpoint, access_key, secret_key string) (*S3
 
 // Save implements Provider.Save
 func (p *S3Provider) Save(file *multipart.FileHeader) (string, error) {
-	// Generate unique filename
+	// Generate unique filename with slugified name
 	ext := filepath.Ext(file.Filename)
-	filename := fmt.Sprintf("%d-%s%s", time.Now().Unix(), file.Filename[:len(file.Filename)-len(ext)], ext)
+	name := file.Filename[:len(file.Filename)-len(ext)]
+	filename := fmt.Sprintf("%d-%s%s", time.Now().Unix(), slugify(name), ext)
 
 	// Open source file
 	src, err := file.Open()

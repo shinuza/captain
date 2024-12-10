@@ -62,7 +62,7 @@ func ServeMedia(database *gorm.DB, cfg *config.Config) gin.HandlerFunc {
 
 		// Set content type header
 		c.Header("Content-Type", media.MimeType)
-		c.Header("Content-Disposition", fmt.Sprintf("inline; filename=%s", media.Name))
+		c.Header("Content-Disposition", fmt.Sprintf("inline; filename=%s", path))
 
 		// Stream the file to the response
 		if _, err := io.Copy(c.Writer, file); err != nil {
