@@ -134,6 +134,8 @@ func setupStatics(themeName string, embeddedFS embed.FS) (fs.FS, fs.FS, error) {
 
 // setupTemplates sets up the template engine
 func setupTemplates(themeName string, embeddedFS embed.FS) (*html.Engine, error) {
+	var userTemplatesFS fs.FS
+	var templatesFS fs.FS
 
 	// Serve embedded admin templates
 	adminTemplatesFS, err := fs.Sub(embeddedFS, "embedded/admin/templates")
@@ -146,17 +148,20 @@ func setupTemplates(themeName string, embeddedFS embed.FS) (*html.Engine, error)
 		return nil, fmt.Errorf("error setting up theme templates: %v", err)
 	}
 
-	templateFS := merged_fs.MergeMultiple(adminTemplatesFS, defaultTemplatesFS)
-
 	if themeName != "default" {
-		userTemplatesFS, err := fs.Sub(os.DirFS("./themes/"+themeName), "templates")
+		userTemplatesFS, err = fs.Sub(os.DirFS("./themes/"+themeName), "templates")
 		if err != nil {
 			return nil, fmt.Errorf("error setting up theme templates: %v", err)
 		}
-		templateFS = merged_fs.MergeMultiple(userTemplatesFS, templateFS)
 	}
 
-	engine := html.NewFileSystem(http.FS(templateFS), ".tmpl")
+	if themeName != "" {
+		templatesFS = merged_fs.MergeMultiple(adminTemplatesFS, userTemplatesFS)
+	} else {
+		templatesFS = merged_fs.MergeMultiple(adminTemplatesFS, defaultTemplatesFS)
+	}
+
+	engine := html.NewFileSystem(http.FS(templatesFS), ".tmpl")
 	engine.AddFuncMap(utils.GetTemplateFuncs())
 
 	return engine, nil

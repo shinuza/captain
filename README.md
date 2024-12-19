@@ -363,7 +363,12 @@ To use a custom theme:
    ├── templates/
    │   ├── header.tmpl
    │   ├── footer.tmpl
-   │   └── ... (add your custom templates here)
+   │   ├── login.tmpl
+   │   ├── page.tmpl
+   │   ├── post.tmpl
+   │   ├── posts.tmpl
+   │   └── tag_posts.tmpl
+   │
    └── static/
        ├── css/
        │   └── main.css

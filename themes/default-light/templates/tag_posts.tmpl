@@ -1,6 +1,6 @@
 {{ template "header" . }}
 <div class="tag-posts">
-    <h1>Posts tagged with #{{.tag}}</h1>
+    <h1>Posts tagged with #{{.tag.Name}}</h1>
     {{if .posts}}
         {{range .posts}}
         <article class="post-item {{ if not .Visible }}draft-post{{ else if .IsScheduled $.settings.Timezone }}scheduled-post{{ end }}">
